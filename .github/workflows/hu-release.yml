@@ -131,6 +131,12 @@ jobs:
           MAC_NOTARIZED: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_PASSWORD != '' }}
         run: |
           cd dist
+          # Version-free copies of the window-app packages, so a website can link
+          # releases/latest/download/<name> and always hand out the newest. AI+ Iroda keeps
+          # fetching the versioned names.
+          cp "wordcraft-$VERSION-windows-x64.msi" wordcraft-hu-windows-x64.msi
+          cp "wordcraft-$VERSION-windows-x64-portable.zip" wordcraft-hu-windows-x64-portable.zip
+          cp "wordcraft-$VERSION-macos-universal.dmg" wordcraft-hu-macos-universal.dmg
           rm -f SHA256SUMS.txt
           sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
