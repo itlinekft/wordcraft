@@ -5,6 +5,12 @@ use crate::WordApp;
 #[cfg(not(target_arch = "wasm32"))]
 use craft_update::updater::{Action, Status, Updater};
 
+/// This build carries Hungarian proofing that upstream has not merged yet, so it updates from
+/// the fork's releases: an upstream release would replace it with a build without it.
+#[cfg(not(target_arch = "wasm32"))]
+static WORDCRAFT_HU: craft_update::app::App =
+    craft_update::app::App::new("wordcraft", "WordCraft", "Writing and document design", "itlinekft/wordcraft");
+
 pub(crate) struct Runtime {
     #[cfg(not(target_arch = "wasm32"))]
     updater: Updater,
@@ -24,7 +30,7 @@ impl Default for Runtime {
     fn default() -> Self {
         Self {
             #[cfg(not(target_arch = "wasm32"))]
-            updater: Updater::new(&craft_update::suite::WORDCRAFT, env!("CARGO_PKG_VERSION")),
+            updater: Updater::new(&WORDCRAFT_HU, env!("CARGO_PKG_VERSION")),
             #[cfg(not(target_arch = "wasm32"))]
             startup_check: false,
             #[cfg(not(target_arch = "wasm32"))]
