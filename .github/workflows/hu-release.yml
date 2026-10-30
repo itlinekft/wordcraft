@@ -4,6 +4,7 @@ name: Hungarian build release
 # The packaging scripts are upstream's; without signing secrets they build unsigned (Windows) and
 # ad-hoc signed (macOS). The release is a draft until it has been checked, and never a
 # prerelease, so that `releases/latest` (the updater's and AI+ Iroda's lookup) finds it.
+# Started from the Actions tab or `gh workflow run hu-release.yml -f version=<v>`.
 
 on:
   workflow_dispatch:
