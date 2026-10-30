@@ -120,5 +120,5 @@ jobs:
           cat SHA256SUMS.txt
           gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
             --title "WordCraft $VERSION (Hungarian proofing)" \
-            --notes "WordCraft ${VERSION%%-*} with the Hungarian spelling, grammar and hyphenation of storytold/wordcraft#2385 and the fixes offered on #2070 and #2385, until upstream merges them. Unsigned: Windows SmartScreen asks once (More info → Run anyway); on macOS open it with right-click → Open." \
+            --notes "WordCraft ${VERSION%%-*} with the Hungarian spelling, grammar and hyphenation of storytold/wordcraft#2385 and the fixes offered on #2070 and #2385, until upstream merges them. Not signed yet: on Windows, SmartScreen asks once (More info → Run anyway); on macOS, after the first refused start, System Settings › Privacy & Security › Open Anyway." \
             -- *
