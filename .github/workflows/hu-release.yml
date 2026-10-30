@@ -1,8 +1,8 @@
 name: Hungarian build release
 
-# The fork's own release: Windows x64 and macOS universal, unsigned, from the branch it is run on.
-# The packaging scripts are upstream's; without signing secrets they build unsigned (Windows) and
-# ad-hoc signed (macOS). The release is a draft until it has been checked, and never a
+# The fork's own release: Windows x64 and macOS universal, from the branch it is run on.
+# The packaging scripts are upstream's. Windows builds unsigned; macOS is signed with the fork's
+# Developer ID secrets (APPLE_*) and notarized when APPLE_PASSWORD is set, otherwise ad-hoc signed. The release is a draft until it has been checked, and never a
 # prerelease, so that `releases/latest` (the updater's and AI+ Iroda's lookup) finds it.
 # Started from the Actions tab or `gh workflow run hu-release.yml -f version=<v>`.
 
@@ -87,8 +87,19 @@ jobs:
           echo "BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
           echo "WORDCRAFT_BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
           cargo xtask version set "$VERSION"
-      - name: Build and package
+      # Without APPLE_CERTIFICATE this step only warns and the build is ad-hoc signed; without
+      # APPLE_PASSWORD package.sh signs but does not notarize.
+      - name: Import signing certificate
         env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: packaging/macos/import-cert.sh
+      - name: Build, sign, notarize
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CRAFT_FONTS_DIR: ${{ github.workspace }}/craft-fonts
           CRAFT_FONTS_REQUIRED: "1"
         run: packaging/macos/package.sh --arch universal
@@ -97,6 +108,10 @@ jobs:
           name: release-macos
           path: dist/release/*
           if-no-files-found: error
+      - name: Remove temporary keychain
+        if: always()
+        run: |
+          if [ -n "${MACOS_KEYCHAIN:-}" ]; then security delete-keychain "$MACOS_KEYCHAIN" || true; fi
 
   release:
     name: Draft release
@@ -113,12 +128,18 @@ jobs:
       - name: Checksums and draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          MAC_NOTARIZED: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_PASSWORD != '' }}
         run: |
           cd dist
           rm -f SHA256SUMS.txt
           sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
+          if [ "$MAC_NOTARIZED" = true ]; then
+            mac="The macOS build is signed and notarized by Apple."
+          else
+            mac="On macOS, after the first refused start: System Settings › Privacy & Security › Open Anyway."
+          fi
           gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
             --title "WordCraft $VERSION (Hungarian proofing)" \
-            --notes "WordCraft ${VERSION%%-*} with the Hungarian spelling, grammar and hyphenation of storytold/wordcraft#2385 and the fixes offered on #2070 and #2385, until upstream merges them. Not signed yet: on Windows, SmartScreen asks once (More info → Run anyway); on macOS, after the first refused start, System Settings › Privacy & Security › Open Anyway." \
+            --notes "WordCraft ${VERSION%%-*} with the Hungarian spelling, grammar and hyphenation of storytold/wordcraft#2385 and the fixes offered on #2070 and #2385, until upstream merges them. The Windows build is not signed yet: SmartScreen asks once (More info → Run anyway). $mac" \
             -- *
